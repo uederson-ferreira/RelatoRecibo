@@ -10,10 +10,10 @@ Created: 2025-12-09
 
 from fastapi import APIRouter
 
-# Import sub-routers (will be uncommented as implemented)
+# Import sub-routers
 from app.api.v1.auth import endpoints as auth_endpoints
 from app.api.v1.reports import endpoints as reports_endpoints
-# from app.api.v1.receipts import endpoints as receipts_endpoints
+from app.api.v1.receipts import endpoints as receipts_endpoints
 # from app.api.v1.profile import endpoints as profile_endpoints
 
 
@@ -35,11 +35,11 @@ api_router.include_router(
 )
 
 # Include receipts endpoints
-# api_router.include_router(
-#     receipts_endpoints.router,
-#     prefix="/receipts",
-#     tags=["Receipts"]
-# )
+api_router.include_router(
+    receipts_endpoints.router,
+    prefix="/receipts",
+    tags=["Receipts"]
+)
 
 # Include profile endpoints
 # api_router.include_router(
