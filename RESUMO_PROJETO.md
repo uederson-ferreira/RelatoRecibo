@@ -1,14 +1,15 @@
 # 📋 RESUMO DO PROJETO - RelatoRecibo
 
 **Data da Última Atualização:** 2025-12-09
-**Status:** Backend 70% completo - API funcional e testável
-**Sessão:** Implementação do backend concluída até endpoints completos
+**Status:** Backend 90% completo - API com Upload, OCR e Autenticação
+**Sessão:** File Upload, OCR Processing e JWT Authentication implementados
 
 ---
 
 ## 🎯 OBJETIVO DO PROJETO
 
 Criar um sistema moderno de gestão de recibos e prestação de contas com:
+
 - 📸 Upload de fotos de recibos
 - 🔍 OCR automático para detectar valores
 - 📄 Geração de PDF profissional
@@ -16,12 +17,13 @@ Criar um sistema moderno de gestão de recibos e prestação de contas com:
 
 ---
 
-## 📊 PROGRESSO ATUAL - BACKEND 70% COMPLETO
+## 📊 PROGRESSO ATUAL - BACKEND 90% COMPLETO
 
-### ✅ IMPLEMENTADO (3.500+ linhas de código)
+### ✅ IMPLEMENTADO (7.500+ linhas de código)
 
 #### 1. Core Infrastructure (100%) ✅
-```
+
+```text
 pwa-v2/backend/app/
 ├── main.py (234 linhas)
 │   ├── FastAPI app configurado
@@ -36,14 +38,15 @@ pwa-v2/backend/app/
 │   ├── Computed properties
 │   └── Type hints completos
 │
-└── dependencies.py (245 linhas)
+└── dependencies.py (295 linhas)
     ├── get_db() - Supabase client
     ├── get_pagination() - Pagination helper
-    └── Placeholders para JWT auth
+    └── get_current_user_id() - JWT authentication ✅
 ```
 
 #### 2. Exceptions (100%) ✅
-```
+
+```text
 app/core/exceptions/
 ├── base.py (268 linhas)
 │   ├── AppException base class
@@ -92,7 +95,8 @@ app/core/exceptions/
 ```
 
 #### 3. Pydantic Models (100%) ✅
-```
+
+```text
 app/models/
 ├── base.py (224 linhas)
 │   ├── TimestampMixin
@@ -125,7 +129,8 @@ app/models/
 ```
 
 #### 4. Repositories (100%) ✅
-```
+
+```text
 app/repositories/
 ├── base.py (268 linhas)
 │   ├── BaseRepository (abstract)
@@ -167,7 +172,8 @@ app/repositories/
 ```
 
 #### 5. Security (100%) ✅
-```
+
+```text
 app/core/security/
 ├── jwt.py (180 linhas)
 │   ├── create_access_token() - JWT com exp 24h
@@ -183,7 +189,8 @@ app/core/security/
 ```
 
 #### 6. API Endpoints (90%) ✅
-```
+
+```text
 app/api/v1/
 ├── router.py (50 linhas)
 │   └── Agrega todos os endpoints
@@ -209,10 +216,55 @@ app/api/v1/
     └── DELETE /api/v1/receipts/{id}
 ```
 
-#### 7. Utils (40%) ✅
+#### 7. Services - OCR & Storage (100%) ✅
+
+```text
+app/services/
+├── ocr/ ✅
+│   ├── extractor.py (192 linhas)
+│   │   ├── OCRExtractor class
+│   │   ├── Tesseract integration
+│   │   ├── extract_receipt_data()
+│   │   ├── Portuguese + English support
+│   │   └── Timeout handling
+│   │
+│   ├── preprocessor.py (185 linhas)
+│   │   ├── Image preprocessing
+│   │   ├── Grayscale conversion
+│   │   ├── Contrast enhancement
+│   │   ├── Noise reduction
+│   │   ├── Sharpening
+│   │   └── Resize for OCR
+│   │
+│   ├── value_parser.py (214 linhas)
+│   │   ├── ValueParser class
+│   │   ├── Brazilian currency parsing (R$ 1.234,56)
+│   │   ├── Multiple pattern matching
+│   │   ├── Total/subtotal detection
+│   │   └── Value validation
+│   │
+│   └── confidence.py (87 linhas)
+│       ├── calculate_confidence()
+│       ├── Tesseract confidence data
+│       ├── Normalize to 0-1 scale
+│       └── Confidence level (high/medium/low)
+│
+└── storage/ ✅
+    └── uploader.py (295 linhas)
+        ├── StorageUploader class
+        ├── upload_image() - Original + thumbnail
+        ├── upload_pdf() - PDF reports
+        ├── delete_image() - Cleanup
+        ├── Supabase Storage integration
+        ├── Signed URLs (1 year expiration)
+        └── Thumbnail generation (300x300)
 ```
+
+#### 8. Utils - Image & Validators (100%) ✅
+
+```text
 app/utils/
-├── formatters/
+├── formatters/ ✅
 │   ├── currency.py (100 linhas)
 │   │   ├── format_brl() - "R$ 1.250,50"
 │   │   ├── format_brl_short() - "R$ 1,3 mil"
@@ -223,7 +275,23 @@ app/utils/
 │       ├── format_datetime_br() - "15/01/2025 14:30"
 │       └── format_datetime_full_br()
 │
-└── constants.py (120 linhas)
+├── image/ ✅
+│   └── validator.py (104 linhas)
+│       ├── validate_image_content()
+│       ├── validate_image_dimensions()
+│       ├── PIL Image verification
+│       ├── Min/max dimensions check
+│       └── is_image_valid()
+│
+├── validators/ ✅
+│   └── file.py (110 linhas)
+│       ├── validate_image_file()
+│       ├── validate_file_size()
+│       ├── Content type validation
+│       ├── Extension validation (.jpg, .png, .webp)
+│       └── 5MB size limit
+│
+└── constants.py (121 linhas)
     ├── File upload constants
     ├── Receipt categories
     ├── OCR configuration
@@ -233,8 +301,23 @@ app/utils/
     └── Storage paths
 ```
 
-#### 8. Configuration Files ✅
+#### 9. File Upload Endpoint (100%) ✅
+
+```text
+app/api/v1/receipts/endpoints.py
+└── POST /{receipt_id}/upload ✅
+    ├── Multipart form data
+    ├── Image validation (type, size, dimensions)
+    ├── Upload to Supabase Storage
+    ├── Thumbnail generation
+    ├── Update receipt with URLs
+    ├── Background OCR processing
+    └── Status: pending → processing → processed
 ```
+
+#### 10. Configuration Files ✅
+
+```text
 pwa-v2/backend/
 ├── .env.example (3.3 KB)
 │   └── Template completo de variáveis
@@ -248,75 +331,32 @@ pwa-v2/backend/
 ├── Dockerfile (vazio - TODO)
 ├── pytest.ini (vazio - TODO)
 └── README.md (vazio - TODO)
+```text
+
+### ⏳ PENDENTE (10%)
+
+#### 1. PDF Service (0%) ⏳
+
+```text
+app/services/pdf/
+├── generator.py - IMPLEMENTAR
+│   ├── ReportLab integration
+│   ├── Generate PDF from report data
+│   └── Upload to Supabase Storage
+│
+├── templates/
+│   ├── report_template.py - IMPLEMENTAR
+│   │   └── PDF layout and structure
+│   └── styles.py - IMPLEMENTAR
+│       └── Fonts, colors, spacing
+│
+└── utils.py - IMPLEMENTAR
+    └── PDF utilities (merge, split, etc.)
 ```
 
-### ⏳ PENDENTE (30%)
+#### 2. Profile Endpoints (0%) ⏳
 
-#### 1. Services (0%) ⏳
-```
-app/services/
-├── auth/ - IMPLEMENTAR
-│   ├── login.py - Business logic de login
-│   ├── signup.py - Business logic de signup
-│   └── token.py - Token refresh/revoke
-│
-├── report/ - IMPLEMENTAR
-│   ├── crud.py - Business logic de relatórios
-│   ├── calculator.py - Cálculo de totais
-│   └── validator.py - Validações de negócio
-│
-├── receipt/ - IMPLEMENTAR
-│   ├── crud.py - Business logic de recibos
-│   ├── upload_handler.py - Processamento de upload
-│   └── validator.py - Validações de negócio
-│
-├── ocr/ - IMPLEMENTAR
-│   ├── extractor.py - Tesseract integration
-│   ├── value_parser.py - Parse valores monetários
-│   ├── confidence.py - Cálculo de confiança
-│   └── preprocessor.py - Preprocessamento de imagem
-│
-├── pdf/ - IMPLEMENTAR
-│   ├── generator.py - ReportLab integration
-│   ├── templates/
-│   │   ├── report_template.py - Template de relatório
-│   │   └── styles.py - Estilos PDF
-│   └── utils.py - Utilidades PDF
-│
-└── storage/ - IMPLEMENTAR
-    ├── uploader.py - Upload para Supabase Storage
-    ├── downloader.py - Download de arquivos
-    ├── deleter.py - Deletar arquivos
-    └── url_generator.py - Generate signed URLs
-```
-
-#### 2. File Upload (0%) ⏳
-```
-app/api/v1/receipts/
-└── file_handlers.py - IMPLEMENTAR
-    ├── upload_receipt_image() - Multipart form
-    ├── validate_image() - Validação de arquivo
-    ├── process_image() - Resize/optimize
-    └── trigger_ocr() - Iniciar processamento OCR
-```
-
-#### 3. Utils Adicionais (60% pendente) ⏳
-```
-app/utils/
-├── image/ - IMPLEMENTAR
-│   ├── validator.py - Validação de imagens
-│   ├── optimizer.py - Compressão/otimização
-│   ├── resizer.py - Resize de imagens
-│   └── converter.py - Conversão de formato
-│
-└── validators/ - IMPLEMENTAR
-    ├── file.py - Validadores de arquivo
-    ├── uuid.py - Validadores de UUID
-    └── date.py - Validadores de data
-```
-
-#### 4. Profile Endpoints (0%) ⏳
-```
+```text
 app/api/v1/profile/
 └── endpoints.py - IMPLEMENTAR
     ├── GET /api/v1/profile - Get profile
@@ -325,8 +365,9 @@ app/api/v1/profile/
     └── GET /api/v1/profile/stats - User statistics
 ```
 
-#### 5. Tests (0%) ⏳
-```
+#### 3. Tests (0%) ⏳
+
+```text
 tests/
 ├── unit/ - IMPLEMENTAR
 │   ├── services/
@@ -346,8 +387,9 @@ tests/
     └── test_receipt_upload.py
 ```
 
-#### 6. Middlewares (0%) ⏳
-```
+#### 4. Middlewares (0%) ⏳
+
+```text
 app/core/middleware/
 ├── logging.py - IMPLEMENTAR
 │   └── Request/response logging
@@ -356,8 +398,9 @@ app/core/middleware/
     └── Enhanced error handling
 ```
 
-#### 7. Documentation (20%) ⏳
-```
+#### 5. Documentation (20%) ⏳
+
+```text
 pwa-v2/backend/
 ├── README.md - CRIAR
 │   ├── Como rodar
@@ -372,7 +415,7 @@ pwa-v2/backend/
     ├── backend-examples.md ✅
     ├── code-templates.md ✅
     └── deployment.md ✅
-```
+```text
 
 ---
 
@@ -396,7 +439,7 @@ pip install -r requirements.txt
 brew install tesseract tesseract-lang
 # Ubuntu:
 # sudo apt install tesseract-ocr tesseract-ocr-por
-```
+```text
 
 ### 2. Configurar .env
 
@@ -406,15 +449,16 @@ cp .env.example .env
 
 # Editar .env com suas credenciais
 nano .env  # ou vim, code, etc.
-```
+```text
 
 **Variáveis obrigatórias:**
+
 ```env
 SUPABASE_URL=https://seu-projeto.supabase.co
 SUPABASE_ANON_KEY=sua-anon-key
 SUPABASE_SERVICE_ROLE_KEY=sua-service-role-key
 JWT_SECRET_KEY=gerar-com-openssl-rand-hex-32
-```
+```text
 
 ### 3. Rodar o Servidor
 
@@ -427,15 +471,15 @@ uvicorn app.main:app --reload --port 8000
 
 # Opção 3: Com configurações customizadas
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000 --log-level debug
-```
+```text
 
 ### 4. Acessar a API
 
-- **API Base:** http://localhost:8000
-- **Documentação (Swagger):** http://localhost:8000/api/docs
-- **Documentação (ReDoc):** http://localhost:8000/api/redoc
-- **OpenAPI JSON:** http://localhost:8000/api/openapi.json
-- **Health Check:** http://localhost:8000/health
+- **API Base:** <http://localhost:8000>
+- **Documentação (Swagger):** <http://localhost:8000/api/docs>
+- **Documentação (ReDoc):** <http://localhost:8000/api/redoc>
+- **OpenAPI JSON:** <http://localhost:8000/api/openapi.json>
+- **Health Check:** <http://localhost:8000/health>
 
 ---
 
@@ -451,9 +495,10 @@ curl -X POST http://localhost:8000/api/v1/auth/signup \
     "password": "SenhaForte123!",
     "full_name": "Usuário Teste"
   }'
-```
+```text
 
 **Resposta:**
+
 ```json
 {
   "access_token": "eyJ0eXAiOiJKV1QiLCJhbGc...",
@@ -467,7 +512,7 @@ curl -X POST http://localhost:8000/api/v1/auth/signup \
     "created_at": "2025-12-09T10:00:00Z"
   }
 }
-```
+```text
 
 ### 2. Login
 
@@ -478,7 +523,7 @@ curl -X POST http://localhost:8000/api/v1/auth/login \
     "email": "teste@example.com",
     "password": "SenhaForte123!"
   }'
-```
+```text
 
 ### 3. Criar Relatório
 
@@ -492,9 +537,10 @@ curl -X POST http://localhost:8000/api/v1/reports \
     "end_date": "2025-01-20",
     "notes": "Incluir recibos de hotel e transporte"
   }'
-```
+```text
 
 **Resposta:**
+
 ```json
 {
   "id": "123e4567-e89b-12d3-a456-426614174000",
@@ -505,7 +551,7 @@ curl -X POST http://localhost:8000/api/v1/reports \
   "receipt_count": 0,
   "created_at": "2025-12-09T10:00:00Z"
 }
-```
+```text
 
 ### 4. Listar Relatórios
 
@@ -518,7 +564,7 @@ curl http://localhost:8000/api/v1/reports?status=draft&limit=10
 
 # Paginação
 curl http://localhost:8000/api/v1/reports?limit=5&offset=10
-```
+```text
 
 ### 5. Criar Recibo
 
@@ -533,13 +579,13 @@ curl -X POST http://localhost:8000/api/v1/receipts \
     "category": "Hospedagem",
     "notes": "Hotel Ibis - Centro"
   }'
-```
+```text
 
 ### 6. Listar Recibos do Relatório
 
 ```bash
 curl "http://localhost:8000/api/v1/receipts?report_id=123e4567-e89b-12d3-a456-426614174000&limit=20"
-```
+```text
 
 ### 7. Atualizar Recibo
 
@@ -550,19 +596,19 @@ curl -X PUT http://localhost:8000/api/v1/receipts/456e4567-e89b-12d3-a456-426614
     "value": 150.00,
     "description": "Hotel - Noite de 15/01 (atualizado)"
   }'
-```
+```text
 
 ### 8. Deletar Recibo
 
 ```bash
 curl -X DELETE http://localhost:8000/api/v1/receipts/456e4567-e89b-12d3-a456-426614174111
-```
+```text
 
 ---
 
 ## 📦 ESTRUTURA DE ARQUIVOS ATUAL
 
-```
+```text
 RelatoRecibo/
 ├── .gitignore ✅
 ├── README.md ✅
@@ -651,7 +697,7 @@ RelatoRecibo/
             ├── setup_db.py
             ├── seed_data.py
             └── migrate_data.py
-```
+```text
 
 ---
 
@@ -661,27 +707,32 @@ RelatoRecibo/
 
 | Módulo | Arquivos | Linhas | Status |
 |--------|----------|--------|--------|
-| Core | 3 | 717 | ✅ 100% |
+| Core | 3 | 767 | ✅ 100% |
 | Exceptions | 4 | 839 | ✅ 100% |
 | Models | 12 | 1.236 | ✅ 100% |
 | Repositories | 5 | 971 | ✅ 100% |
 | Security | 2 | 280 | ✅ 100% |
-| API Endpoints | 4 | 760 | ✅ 90% |
-| Utils | 3 | 290 | ✅ 40% |
-| **TOTAL** | **33** | **5.093** | **70%** |
+| API Endpoints | 4 | 854 | ✅ 100% |
+| Services (OCR & Storage) | 5 | 973 | ✅ 100% |
+| Utils (Formatters, Image, Validators) | 6 | 595 | ✅ 100% |
+| **TOTAL** | **41** | **7.515** | **90%** |
 
 ### Arquivos Criados
 
 - **150 arquivos** totais
-- **33 arquivos** com código implementado
-- **117 arquivos** vazios (estrutura preparada)
+- **41 arquivos** com código implementado (+8 novos)
+- **109 arquivos** vazios (estrutura preparada)
 - **37 diretórios** organizados
 
 ---
 
 ## 🔗 COMMITS REALIZADOS
 
-```
+```text
+c18d381 - feat: implement JWT authentication across all endpoints
+0f68633 - feat: implement OCR processing for receipts
+7f383f5 - feat: implement file upload for receipts
+f12aba9 - docs: complete project documentation and progress summary
 678cd9e - feat: implement receipts endpoints + utils completion
 58862dd - feat: implement API endpoints (auth + reports)
 3166309 - feat: implement repositories, security and utils
@@ -690,7 +741,7 @@ f9a4d08 - feat: implement backend core structure and base files
 df56db0 - feat: setup monorepo RelatoRecibo v2.0
 ```
 
-**Repositório:** https://github.com/uederson-ferreira/RelatoRecibo.git
+**Repositório:** <https://github.com/uederson-ferreira/RelatoRecibo.git>
 **Branch:** main
 
 ---
@@ -699,102 +750,93 @@ df56db0 - feat: setup monorepo RelatoRecibo v2.0
 
 ### PRIORIDADE ALTA (Para API Completa)
 
-1. **Implementar File Upload** (1-2 horas)
-   - `app/api/v1/receipts/file_handlers.py`
-   - Multipart form handling
-   - Image validation
-   - Supabase Storage integration
-
-2. **Implementar OCR Service** (2-3 horas)
-   - `app/services/ocr/extractor.py`
-   - Tesseract integration
-   - Value parsing
-   - Confidence calculation
-
-3. **Implementar Storage Service** (1-2 horas)
-   - `app/services/storage/uploader.py`
-   - Upload para Supabase Storage
-   - Generate signed URLs
-   - Delete files
-
-4. **Atualizar JWT Authentication** (1 hora)
-   - Completar `dependencies.py` com `get_current_user_id()`
-   - Substituir `MOCK_USER_ID` nos endpoints
-   - Middleware de autenticação
-
-### PRIORIDADE MÉDIA (Para Produção)
-
-5. **Implementar PDF Service** (2-3 horas)
+1. **Implementar PDF Service** (2-3 horas)
    - `app/services/pdf/generator.py`
    - ReportLab integration
    - Template de relatório
    - Generate e upload PDF
 
-6. **Profile Endpoints** (1 hora)
+### PRIORIDADE MÉDIA (Para Produção)
+
+2. **Profile Endpoints** (1 hora)
    - `app/api/v1/profile/endpoints.py`
    - GET /profile
    - PUT /profile
    - POST /profile/avatar
 
-7. **Implementar Image Utils** (1-2 horas)
-   - `app/utils/image/validator.py`
-   - `app/utils/image/optimizer.py`
-   - `app/utils/image/resizer.py`
-   - Thumbnail generation
-
 ### PRIORIDADE BAIXA (Para Qualidade)
 
-8. **Tests** (3-5 horas)
+3. **Tests** (3-5 horas)
    - Unit tests para services
    - Unit tests para utils
    - Integration tests para endpoints
    - Fixtures e mocks
 
-9. **Documentation** (1-2 horas)
+4. **Documentation** (1-2 horas)
    - README.md do backend
    - Exemplos de uso
    - Troubleshooting guide
 
-10. **DevOps** (2-3 horas)
-    - Dockerfile completo
-    - docker-compose.yml
-    - GitHub Actions CI/CD
-    - Deploy no Render.com
+5. **DevOps** (2-3 horas)
+   - Dockerfile completo
+   - docker-compose.yml
+   - GitHub Actions CI/CD
+   - Deploy no Render.com
 
 ---
 
-## 🐛 PROBLEMAS CONHECIDOS
+## ✅ PROBLEMAS RESOLVIDOS
 
-### 1. Autenticação Mock
-**Problema:** Endpoints usam `MOCK_USER_ID` hardcoded
-**Impacto:** Todos os usuários compartilham o mesmo ID
-**Solução:** Implementar `get_current_user_id()` em `dependencies.py`
+### 1. Autenticação Mock ✅ RESOLVIDO
 
-### 2. JWT Não Validado
-**Problema:** Token JWT é gerado mas não é validado nos endpoints
-**Impacto:** Qualquer um pode acessar qualquer endpoint
-**Solução:** Usar `Depends(get_current_user_id)` em todos os endpoints protegidos
+**Era:** Endpoints usavam `MOCK_USER_ID` hardcoded
+**Agora:** JWT authentication completo com `get_current_user_id()`
+**Solução:** Implementado em commit c18d381
 
-### 3. File Upload Não Implementado
-**Problema:** Não há endpoint para upload de imagens
-**Impacto:** Recibos não têm imagens associadas
-**Solução:** Implementar `file_handlers.py` com multipart form
+### 2. JWT Não Validado ✅ RESOLVIDO
 
-### 4. OCR Não Implementado
-**Problema:** Status de receipts fica sempre em "pending"
-**Impacto:** Valores não são extraídos automaticamente
-**Solução:** Implementar service de OCR com Tesseract
+**Era:** Token JWT gerado mas não validado
+**Agora:** Todos endpoints validam Bearer token
+**Solução:** `Depends(get_current_user_id)` em todos os endpoints
 
-### 5. Storage Não Implementado
-**Problema:** Imagens não são salvas no Supabase Storage
-**Impacto:** URLs de imagens ficam NULL
-**Solução:** Implementar storage service
+### 3. File Upload Não Implementado ✅ RESOLVIDO
+
+**Era:** Sem endpoint para upload de imagens
+**Agora:** POST /{receipt_id}/upload completo
+**Solução:** Implementado em commit 7f383f5
+
+### 4. OCR Não Implementado ✅ RESOLVIDO
+
+**Era:** Status ficava em "pending" forever
+**Agora:** OCR processing automático em background
+**Solução:** Implementado em commit 0f68633
+
+### 5. Storage Não Implementado ✅ RESOLVIDO
+
+**Era:** Imagens não salvas no Supabase Storage
+**Agora:** Upload + thumbnail generation + signed URLs
+**Solução:** StorageUploader completo
+
+## 🐛 PROBLEMAS CONHECIDOS ATUAIS
+
+### 1. Tesseract Não Instalado
+
+**Problema:** OCR service requer Tesseract instalado no sistema
+**Impacto:** OCR processing vai falhar se Tesseract não estiver disponível
+**Solução:** Instalar via `apt-get install tesseract-ocr tesseract-ocr-por`
+
+### 2. PDF Service Pendente
+
+**Problema:** Não há geração de PDF ainda
+**Impacto:** Não é possível gerar relatórios em PDF
+**Solução:** Implementar PDF service (próximo passo prioritário)
 
 ---
 
 ## 📚 DOCUMENTAÇÃO DE REFERÊNCIA
 
 ### Documentação Já Criada ✅
+
 1. **pwa-v2/docs/arquitetura.md** - Arquitetura completa Python + FastAPI
 2. **pwa-v2/docs/arquitetura-modular.md** - Guia de modularização (<300 linhas)
 3. **pwa-v2/docs/code-templates.md** - Templates de código com exemplos
@@ -805,6 +847,7 @@ df56db0 - feat: setup monorepo RelatoRecibo v2.0
 ### Stack Tecnológica
 
 **Backend:**
+
 - Python 3.11+
 - FastAPI 0.104.1
 - Uvicorn (ASGI server)
@@ -815,22 +858,26 @@ df56db0 - feat: setup monorepo RelatoRecibo v2.0
 - loguru (logging)
 
 **Database:**
+
 - PostgreSQL (Supabase)
 - Row Level Security (RLS)
 - Triggers automáticos
 - Full-text search
 
 **Storage:**
+
 - Supabase Storage
 - Bucket: "receipts"
 - Policies de acesso por usuário
 
 **OCR (quando implementar):**
+
 - Tesseract OCR
 - pytesseract 0.3.10
 - Pillow 10.1.0 (image processing)
 
 **PDF (quando implementar):**
+
 - ReportLab 4.0.7
 
 ---
@@ -838,27 +885,35 @@ df56db0 - feat: setup monorepo RelatoRecibo v2.0
 ## 💡 DECISÕES TÉCNICAS IMPORTANTES
 
 ### 1. Python ao invés de Node.js
+
 **Motivo:** OCR mais robusto (pytesseract nativo), PDF mais rico (ReportLab)
 
 ### 2. FastAPI ao invés de Django/Flask
+
 **Motivo:** Performance (async), validação automática (Pydantic), documentação automática (OpenAPI)
 
 ### 3. Supabase ao invés de Firebase
+
 **Motivo:** PostgreSQL (mais robusto), RLS (segurança), SQL completo, open-source
 
 ### 4. Monorepo ao invés de Multi-repo
+
 **Motivo:** Mesmo produto, histórico unificado, docs centralizadas
 
 ### 5. Modularização Extrema (<300 linhas)
+
 **Motivo:** Manutenibilidade, testabilidade, clareza, fácil navegação
 
 ### 6. Repository Pattern
+
 **Motivo:** Separação de concerns, testabilidade, flexibilidade para trocar banco
 
 ### 7. JWT ao invés de Sessions
+
 **Motivo:** Stateless, escalável, mobile-friendly, não precisa de Redis
 
 ### 8. bcrypt 12 rounds
+
 **Motivo:** Balance entre segurança e performance (~200-300ms por hash)
 
 ---
@@ -866,6 +921,7 @@ df56db0 - feat: setup monorepo RelatoRecibo v2.0
 ## 🎓 CONTEXTO PARA PRÓXIMA SESSÃO
 
 ### O Que Já Funciona
+
 ✅ Criar conta e fazer login
 ✅ CRUD completo de relatórios
 ✅ CRUD completo de recibos
@@ -877,6 +933,7 @@ df56db0 - feat: setup monorepo RelatoRecibo v2.0
 ✅ Documentação automática (Swagger)
 
 ### O Que Precisa de Atenção
+
 ⚠️ Autenticação está mockada (todos usam mesmo user_id)
 ⚠️ Sem upload de imagens ainda
 ⚠️ OCR não processa nada
@@ -884,6 +941,7 @@ df56db0 - feat: setup monorepo RelatoRecibo v2.0
 ⚠️ Storage não está conectado
 
 ### Como Continuar
+
 1. **Se quiser API completa:** Implemente file upload + OCR + storage
 2. **Se quiser testar frontend:** API atual já permite testar toda UI
 3. **Se quiser deploy:** Configure Supabase e faça deploy no Render
@@ -894,6 +952,7 @@ df56db0 - feat: setup monorepo RelatoRecibo v2.0
 ## 🚀 DEPLOY (Quando Pronto)
 
 ### Backend (Render.com)
+
 ```bash
 # 1. Criar conta no Render
 # 2. New > Web Service
@@ -903,9 +962,10 @@ Build Command: pip install -r requirements.txt
 Start Command: uvicorn app.main:app --host 0.0.0.0 --port $PORT
 # 5. Add environment variables do .env.example
 # 6. Deploy
-```
+```text
 
 ### Database (Supabase)
+
 ```bash
 # 1. Criar conta no Supabase
 # 2. New project: relatorecibo
@@ -916,14 +976,14 @@ Start Command: uvicorn app.main:app --host 0.0.0.0 --port $PORT
 #    - sql/04_functions.sql
 # 4. Storage > New bucket: "receipts" (private)
 # 5. Settings > API > copiar credentials
-```
+```text
 
 ---
 
 ## 📞 INFORMAÇÕES DE CONTATO
 
 **Projeto:** RelatoRecibo v2.0
-**Repositório:** https://github.com/uederson-ferreira/RelatoRecibo
+**Repositório:** <https://github.com/uederson-ferreira/RelatoRecibo>
 **Desenvolvedor:** Uederson Ferreira
 **Assistente:** Claude Sonnet 4.5
 **Data Início:** 2025-12-09
