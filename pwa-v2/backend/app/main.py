@@ -15,8 +15,8 @@ from fastapi.responses import JSONResponse
 from loguru import logger
 
 from app.config import settings
-# from app.api.v1.router import api_router  # Will be implemented later
-# from app.core.exceptions.base import AppException  # Will be implemented later
+from app.api.v1.router import api_router
+from app.core.exceptions.base import AppException
 
 
 # ----------------------------------------
@@ -53,16 +53,16 @@ app = FastAPI(
     description="""
     # RelatoRecibo API v2.0
 
-    API moderna para gestão de recibos e prestação de contas.
+    API moderna para gestï¿½o de recibos e prestaï¿½ï¿½o de contas.
 
     ## Recursos principais:
-    - =ø Upload de fotos de recibos
-    - = OCR automático para detectar valores
-    - =Ä Geração de PDF profissional
-    - = Autenticação JWT
-    - =Ä Armazenamento seguro (Supabase)
+    - =ï¿½ Upload de fotos de recibos
+    - = OCR automï¿½tico para detectar valores
+    - =ï¿½ Geraï¿½ï¿½o de PDF profissional
+    - = Autenticaï¿½ï¿½o JWT
+    - =ï¿½ Armazenamento seguro (Supabase)
 
-    ## Stack tecnológica:
+    ## Stack tecnolï¿½gica:
     - **Backend:** Python 3.11+ + FastAPI
     - **Database:** PostgreSQL (Supabase)
     - **Storage:** Supabase Storage
@@ -106,29 +106,27 @@ logger.info(f"CORS configured for origins: {settings.ALLOWED_ORIGINS}")
 # ----------------------------------------
 # Include API routers
 # ----------------------------------------
-# TODO: Uncomment when router is implemented
-# app.include_router(api_router, prefix=settings.API_V1_PREFIX)
-# logger.info(f"API v1 router included at {settings.API_V1_PREFIX}")
+app.include_router(api_router, prefix=settings.API_V1_PREFIX)
+logger.info(f"API v1 router included at {settings.API_V1_PREFIX}")
 
 
 # ----------------------------------------
 # Exception handlers
 # ----------------------------------------
-# TODO: Uncomment when AppException is implemented
-# @app.exception_handler(AppException)
-# async def app_exception_handler(request, exc: AppException):
-#     """Handle custom application exceptions."""
-#     logger.error(f"AppException: {exc.code} - {exc.message}")
-#     return JSONResponse(
-#         status_code=exc.status_code,
-#         content={
-#             "error": {
-#                 "code": exc.code,
-#                 "message": exc.message,
-#                 "details": exc.details
-#             }
-#         }
-#     )
+@app.exception_handler(AppException)
+async def app_exception_handler(request, exc: AppException):
+    """Handle custom application exceptions."""
+    logger.error(f"AppException: {exc.code} - {exc.message}")
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "error": {
+                "code": exc.code,
+                "message": exc.message,
+                "details": exc.details
+            }
+        }
+    )
 
 
 @app.exception_handler(Exception)
@@ -160,7 +158,7 @@ async def startup_event():
     - Validate configuration
     """
     logger.info("=" * 50)
-    logger.info(f"=€ Starting {settings.PROJECT_NAME} v{settings.VERSION}")
+    logger.info(f"=ï¿½ Starting {settings.PROJECT_NAME} v{settings.VERSION}")
     logger.info(f"Environment: {settings.ENVIRONMENT}")
     logger.info(f"Debug mode: {settings.DEBUG}")
     logger.info(f"Docs URL: {settings.docs_url or 'Disabled'}")
@@ -191,7 +189,7 @@ async def shutdown_event():
     - Cleanup resources
     """
     logger.info("=" * 50)
-    logger.info(f"=Ñ Shutting down {settings.PROJECT_NAME}")
+    logger.info(f"=ï¿½ Shutting down {settings.PROJECT_NAME}")
     logger.info("=" * 50)
 
     # Close Supabase client
