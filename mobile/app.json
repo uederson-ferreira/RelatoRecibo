@@ -1,0 +1,55 @@
+{
+  "expo": {
+    "name": "RelatoRecibo",
+    "slug": "relato-recibo",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "description": "App para gestão de recibos e prestação de contas com OCR e geração de PDF",
+    "splash": {
+      "image": "./assets/icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#2196F3"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "Este app precisa de acesso à câmera para capturar fotos de recibos.",
+        "NSPhotoLibraryUsageDescription": "Este app precisa de acesso às fotos para permitir que você selecione imagens de recibos.",
+        "NSPhotoLibraryAddUsageDescription": "Este app precisa de permissão para salvar fotos de recibos na galeria."
+      }
+    },
+    "android": {
+      "package": "com.relatoRecibo.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#2196F3"
+      },
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Permitir que $(PRODUCT_NAME) acesse sua câmera para capturar fotos de recibos."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Permitir que $(PRODUCT_NAME) acesse suas fotos para selecionar imagens de recibos."
+        }
+      ]
+    ]
+  }
+}

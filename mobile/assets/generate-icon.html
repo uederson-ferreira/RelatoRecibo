@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>RelatoRecibo Icon Generator</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #f0f0f0;
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            text-align: center;
+        }
+        canvas {
+            border: 2px solid #ccc;
+            border-radius: 20px;
+            margin: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #1976D2;
+        }
+        .info {
+            margin-top: 20px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Ícone RelatoRecibo</h1>
+        <canvas id="icon" width="1024" height="1024"></canvas>
+        <div>
+            <button onclick="downloadIcon(1024)">Baixar 1024x1024</button>
+            <button onclick="downloadIcon(512)">Baixar 512x512</button>
+        </div>
+        <div class="info">
+            <p>Clique nos botões acima para baixar o ícone</p>
+            <p>Renomeie para icon.png e coloque na pasta assets/</p>
+        </div>
+    </div>
+
+    <script>
+        function drawIcon(size) {
+            const canvas = document.getElementById('icon');
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+
+            // Background gradient
+            const gradient = ctx.createLinearGradient(0, 0, size, size);
+            gradient.addColorStop(0, '#2196F3');
+            gradient.addColorStop(1, '#1976D2');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, size, size);
+
+            // Receipt icon
+            ctx.fillStyle = 'white';
+
+            // Receipt paper
+            const receiptWidth = size * 0.5;
+            const receiptHeight = size * 0.65;
+            const receiptX = (size - receiptWidth) / 2;
+            const receiptY = (size - receiptHeight) / 2;
+
+            ctx.fillRect(receiptX, receiptY, receiptWidth, receiptHeight);
+
+            // Receipt top zigzag
+            ctx.fillStyle = '#2196F3';
+            const zigzagHeight = size * 0.03;
+            for (let i = 0; i < 10; i++) {
+                ctx.beginPath();
+                ctx.moveTo(receiptX + (receiptWidth / 10) * i, receiptY);
+                ctx.lineTo(receiptX + (receiptWidth / 10) * (i + 0.5), receiptY - zigzagHeight);
+                ctx.lineTo(receiptX + (receiptWidth / 10) * (i + 1), receiptY);
+                ctx.fill();
+            }
+
+            // Receipt lines
+            ctx.strokeStyle = '#E0E0E0';
+            ctx.lineWidth = size * 0.01;
+
+            const lineY = receiptY + size * 0.12;
+            const lineSpacing = size * 0.07;
+
+            for (let i = 0; i < 6; i++) {
+                ctx.beginPath();
+                ctx.moveTo(receiptX + size * 0.08, lineY + (lineSpacing * i));
+                ctx.lineTo(receiptX + receiptWidth - size * 0.08, lineY + (lineSpacing * i));
+                ctx.stroke();
+            }
+
+            // Dollar sign
+            ctx.fillStyle = '#4CAF50';
+            ctx.font = `bold ${size * 0.25}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('R$', size / 2, receiptY + receiptHeight - size * 0.15);
+
+            // Camera overlay (bottom right corner)
+            const cameraSize = size * 0.2;
+            const cameraX = size - cameraSize - size * 0.05;
+            const cameraY = size - cameraSize - size * 0.05;
+
+            // Camera circle background
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+            ctx.beginPath();
+            ctx.arc(cameraX + cameraSize/2, cameraY + cameraSize/2, cameraSize * 0.6, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Camera icon
+            ctx.fillStyle = '#2196F3';
+            const camIconSize = cameraSize * 0.5;
+            const camX = cameraX + (cameraSize - camIconSize) / 2;
+            const camY = cameraY + (cameraSize - camIconSize) / 2;
+
+            // Camera body
+            ctx.fillRect(camX, camY + camIconSize * 0.2, camIconSize, camIconSize * 0.6);
+
+            // Camera lens
+            ctx.fillStyle = '#1976D2';
+            ctx.beginPath();
+            ctx.arc(camX + camIconSize * 0.5, camY + camIconSize * 0.5, camIconSize * 0.25, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Camera flash
+            ctx.fillStyle = '#2196F3';
+            ctx.fillRect(camX + camIconSize * 0.65, camY, camIconSize * 0.25, camIconSize * 0.15);
+        }
+
+        function downloadIcon(size) {
+            drawIcon(size);
+            const canvas = document.getElementById('icon');
+            const link = document.createElement('a');
+            link.download = `icon-${size}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+
+        // Draw initial icon
+        drawIcon(1024);
+    </script>
+</body>
+</html>
