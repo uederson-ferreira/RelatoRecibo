@@ -9,7 +9,7 @@ Created: 2025-12-09
 
 from typing import List
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File, BackgroundTasks
 from supabase import Client
 from loguru import logger
 
@@ -24,6 +24,7 @@ from app.repositories.report_repository import ReportRepository
 from app.core.exceptions.receipt import ReceiptNotFoundException
 from app.core.exceptions.report import ReportNotFoundException
 from app.services.storage.uploader import StorageUploader
+from app.services.ocr.extractor import OCRExtractor
 from app.utils.validators.file import validate_image_file, validate_file_size
 from app.utils.image.validator import validate_image_content, validate_image_dimensions
 
@@ -33,6 +34,59 @@ router = APIRouter()
 
 # TODO: Replace with actual user authentication
 MOCK_USER_ID = "00000000-0000-0000-0000-000000000001"
+
+
+async def process_ocr_background(
+    receipt_id: UUID,
+    image_data: bytes,
+    db: Client
+):
+    """
+    Background task to process OCR on receipt image.
+
+    Args:
+        receipt_id: Receipt UUID
+        image_data: Image binary data
+        db: Database client
+    """
+    try:
+        logger.info(f"Starting OCR processing for receipt {receipt_id}")
+
+        receipt_repo = ReceiptRepository(db)
+        ocr_extractor = OCRExtractor()
+
+        # Extract OCR data
+        ocr_result = await ocr_extractor.extract_receipt_data(image_data)
+
+        # Update receipt with OCR results
+        update_data = {
+            "ocr_text": ocr_result["text"],
+            "ocr_confidence": float(ocr_result["confidence"]),
+            "status": ReceiptStatus.PROCESSED.value
+        }
+
+        # If value was extracted and receipt doesn't have a value, update it
+        if ocr_result["value"] and ocr_result["confidence"] >= 0.7:
+            existing = await receipt_repo.find_by_id(receipt_id)
+            if existing and not existing.get("value"):
+                update_data["value"] = float(ocr_result["value"])
+                logger.info(f"Auto-filled value: {ocr_result['value']}")
+
+        await receipt_repo.update(receipt_id, update_data)
+
+        logger.info(f"OCR processing completed for receipt {receipt_id}")
+
+    except Exception as e:
+        logger.error(f"OCR processing failed for receipt {receipt_id}: {e}")
+
+        # Update receipt with error status
+        try:
+            await receipt_repo.update(receipt_id, {
+                "status": ReceiptStatus.ERROR.value,
+                "ocr_error": str(e)
+            })
+        except:
+            pass
 
 
 @router.post("", response_model=ReceiptResponse, status_code=status.HTTP_201_CREATED)
@@ -357,6 +411,7 @@ async def delete_receipt(
 @router.post("/{receipt_id}/upload", response_model=ReceiptResponse)
 async def upload_receipt_image(
     receipt_id: UUID,
+    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     db: Client = Depends(get_db)
 ):
@@ -439,9 +494,13 @@ async def upload_receipt_image(
 
         logger.info(f"Image uploaded for receipt: {receipt_id}")
 
-        # TODO: Trigger OCR processing asynchronously
-        # This would typically be done via a background task or message queue
-        # For now, the receipt will stay in "processing" status until OCR is implemented
+        # Trigger OCR processing in background
+        background_tasks.add_task(
+            process_ocr_background,
+            receipt_id=receipt_id,
+            image_data=image_data,
+            db=db
+        )
 
         return ReceiptResponse(**updated)
 

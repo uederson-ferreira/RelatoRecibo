@@ -20,6 +20,7 @@ python-multipart==0.0.6           # Form data & file uploads
 # ===== Image Processing & OCR =====
 Pillow==10.1.0             # Image processing
 pytesseract==0.3.10        # Tesseract OCR wrapper
+numpy==1.26.2              # Array processing for image operations
 
 # ===== PDF Generation =====
 reportlab==4.0.7           # PDF generation
