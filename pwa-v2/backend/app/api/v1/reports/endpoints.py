@@ -13,7 +13,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from supabase import Client
 from loguru import logger
 
-from app.dependencies import get_db, get_pagination, Pagination
+from app.dependencies import get_db, get_pagination, get_current_user_id, Pagination
 from app.models.report.create import ReportCreate
 from app.models.report.update import ReportUpdate
 from app.models.report.response import ReportResponse, ReportSummary
@@ -29,14 +29,11 @@ from app.core.exceptions.report import (
 router = APIRouter()
 
 
-# TODO: Replace with actual user authentication
-MOCK_USER_ID = "00000000-0000-0000-0000-000000000001"
-
-
 @router.post("", response_model=ReportResponse, status_code=status.HTTP_201_CREATED)
 async def create_report(
     report_data: ReportCreate,
-    db: Client = Depends(get_db)
+    db: Client = Depends(get_db),
+    user_id: str = Depends(get_current_user_id)
 ):
     """
     Create a new report.
@@ -51,13 +48,11 @@ async def create_report(
     - Created report with generated ID
 
     Raises:
+    - 401: Unauthorized (missing or invalid token)
     - 422: Validation error
     """
     try:
         repo = ReportRepository(db)
-
-        # TODO: Get user_id from JWT token
-        user_id = MOCK_USER_ID
 
         # Prepare report data
         report_dict = report_data.model_dump()
@@ -83,7 +78,8 @@ async def create_report(
 async def list_reports(
     status: ReportStatus = Query(None, description="Filter by status"),
     pagination: Pagination = Depends(get_pagination),
-    db: Client = Depends(get_db)
+    db: Client = Depends(get_db),
+    user_id: str = Depends(get_current_user_id)
 ):
     """
     List all reports for authenticated user.
@@ -96,12 +92,12 @@ async def list_reports(
     Returns:
     - Paginated list of reports
     - Total count and pagination metadata
+
+    Raises:
+    - 401: Unauthorized (missing or invalid token)
     """
     try:
         repo = ReportRepository(db)
-
-        # TODO: Get user_id from JWT token
-        user_id = MOCK_USER_ID
 
         # Fetch reports
         reports = await repo.find_by_user(
@@ -140,7 +136,8 @@ async def list_reports(
 @router.get("/{report_id}", response_model=ReportResponse)
 async def get_report(
     report_id: UUID,
-    db: Client = Depends(get_db)
+    db: Client = Depends(get_db),
+    user_id: str = Depends(get_current_user_id)
 ):
     """
     Get a specific report by ID.
@@ -152,14 +149,12 @@ async def get_report(
     - Report details
 
     Raises:
+    - 401: Unauthorized (missing or invalid token)
     - 404: Report not found
     - 403: Access denied (not owner)
     """
     try:
         repo = ReportRepository(db)
-
-        # TODO: Get user_id from JWT token
-        user_id = MOCK_USER_ID
 
         # Fetch report
         report = await repo.find_by_id_and_user(
@@ -190,7 +185,8 @@ async def get_report(
 async def update_report(
     report_id: UUID,
     update_data: ReportUpdate,
-    db: Client = Depends(get_db)
+    db: Client = Depends(get_db),
+    user_id: str = Depends(get_current_user_id)
 ):
     """
     Update a report.
@@ -210,15 +206,13 @@ async def update_report(
     - Updated report
 
     Raises:
+    - 401: Unauthorized (missing or invalid token)
     - 404: Report not found
     - 403: Access denied
     - 422: Validation error
     """
     try:
         repo = ReportRepository(db)
-
-        # TODO: Get user_id from JWT token
-        user_id = MOCK_USER_ID
 
         # Check if report exists and user has access
         existing = await repo.find_by_id_and_user(
@@ -262,7 +256,8 @@ async def update_report(
 @router.delete("/{report_id}", response_model=SuccessResponse)
 async def delete_report(
     report_id: UUID,
-    db: Client = Depends(get_db)
+    db: Client = Depends(get_db),
+    user_id: str = Depends(get_current_user_id)
 ):
     """
     Delete a report.
@@ -274,6 +269,7 @@ async def delete_report(
     - Success message
 
     Raises:
+    - 401: Unauthorized (missing or invalid token)
     - 404: Report not found
     - 403: Access denied
 
@@ -282,9 +278,6 @@ async def delete_report(
     """
     try:
         repo = ReportRepository(db)
-
-        # TODO: Get user_id from JWT token
-        user_id = MOCK_USER_ID
 
         # Check if report exists and user has access
         existing = await repo.find_by_id_and_user(

@@ -9,11 +9,15 @@ Created: 2025-12-09
 """
 
 from typing import Optional
+from uuid import UUID
 from fastapi import Depends, Header, HTTPException, status
 from supabase import Client
+from loguru import logger
 
 from app.repositories.supabase_client import get_supabase_client
 from app.config import settings
+from app.core.security.jwt import decode_access_token
+from app.core.exceptions.auth import InvalidTokenException, TokenExpiredException, MissingTokenException
 
 
 # ----------------------------------------
@@ -87,15 +91,47 @@ async def get_current_user_id(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # TODO: Implement JWT validation using app.core.security.jwt
-    # For now, return a placeholder
-    # This will be replaced with actual JWT validation
+    # Decode and validate JWT token
+    try:
+        payload = decode_access_token(token)
+        user_id = payload.get("sub")
 
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="JWT authentication not yet implemented. "
-               "Please implement app.core.security.jwt module."
-    )
+        if not user_id:
+            raise InvalidTokenException(
+                details={"error": "Missing user ID in token"}
+            )
+
+        # Validate UUID format
+        try:
+            UUID(user_id)
+        except ValueError:
+            raise InvalidTokenException(
+                details={"error": "Invalid user ID format"}
+            )
+
+        logger.debug(f"Authenticated user: {user_id}")
+
+        return user_id
+
+    except TokenExpiredException as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=e.message,
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    except InvalidTokenException as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=e.message,
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    except Exception as e:
+        logger.error(f"Token validation error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
 
 async def get_optional_user_id(

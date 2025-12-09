@@ -13,7 +13,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile
 from supabase import Client
 from loguru import logger
 
-from app.dependencies import get_db, get_pagination, Pagination
+from app.dependencies import get_db, get_pagination, get_current_user_id, Pagination
 from app.models.receipt.create import ReceiptCreate
 from app.models.receipt.update import ReceiptUpdate
 from app.models.receipt.response import ReceiptResponse, ReceiptSummary
@@ -30,10 +30,6 @@ from app.utils.image.validator import validate_image_content, validate_image_dim
 
 
 router = APIRouter()
-
-
-# TODO: Replace with actual user authentication
-MOCK_USER_ID = "00000000-0000-0000-0000-000000000001"
 
 
 async def process_ocr_background(
@@ -92,7 +88,8 @@ async def process_ocr_background(
 @router.post("", response_model=ReceiptResponse, status_code=status.HTTP_201_CREATED)
 async def create_receipt(
     receipt_data: ReceiptCreate,
-    db: Client = Depends(get_db)
+    db: Client = Depends(get_db),
+    user_id: str = Depends(get_current_user_id)
 ):
     """
     Create a new receipt.
@@ -108,15 +105,13 @@ async def create_receipt(
     - Created receipt with generated ID
 
     Raises:
+    - 401: Unauthorized (missing or invalid token)
     - 404: Report not found
     - 422: Validation error
     """
     try:
         receipt_repo = ReceiptRepository(db)
         report_repo = ReportRepository(db)
-
-        # TODO: Get user_id from JWT token
-        user_id = MOCK_USER_ID
 
         # Verify report exists and user has access
         report = await report_repo.find_by_id_and_user(
@@ -155,7 +150,8 @@ async def create_receipt(
 async def list_receipts(
     report_id: UUID = Query(..., description="Filter by report ID"),
     pagination: Pagination = Depends(get_pagination),
-    db: Client = Depends(get_db)
+    db: Client = Depends(get_db),
+    user_id: str = Depends(get_current_user_id)
 ):
     """
     List all receipts for a specific report.
@@ -170,14 +166,12 @@ async def list_receipts(
     - Total count and pagination metadata
 
     Raises:
+    - 401: Unauthorized (missing or invalid token)
     - 404: Report not found
     """
     try:
         receipt_repo = ReceiptRepository(db)
         report_repo = ReportRepository(db)
-
-        # TODO: Get user_id from JWT token
-        user_id = MOCK_USER_ID
 
         # Verify report exists and user has access
         report = await report_repo.find_by_id_and_user(
@@ -226,7 +220,8 @@ async def list_receipts(
 @router.get("/{receipt_id}", response_model=ReceiptResponse)
 async def get_receipt(
     receipt_id: UUID,
-    db: Client = Depends(get_db)
+    db: Client = Depends(get_db),
+    user_id: str = Depends(get_current_user_id)
 ):
     """
     Get a specific receipt by ID.
@@ -238,14 +233,12 @@ async def get_receipt(
     - Receipt details including OCR data and image URLs
 
     Raises:
+    - 401: Unauthorized (missing or invalid token)
     - 404: Receipt not found
     - 403: Access denied (not owner)
     """
     try:
         receipt_repo = ReceiptRepository(db)
-
-        # TODO: Get user_id from JWT token
-        user_id = MOCK_USER_ID
 
         # Fetch receipt
         receipt = await receipt_repo.find_by_id_and_user(
@@ -276,7 +269,8 @@ async def get_receipt(
 async def update_receipt(
     receipt_id: UUID,
     update_data: ReceiptUpdate,
-    db: Client = Depends(get_db)
+    db: Client = Depends(get_db),
+    user_id: str = Depends(get_current_user_id)
 ):
     """
     Update a receipt.
@@ -295,15 +289,13 @@ async def update_receipt(
     - Updated receipt
 
     Raises:
+    - 401: Unauthorized (missing or invalid token)
     - 404: Receipt not found
     - 403: Access denied
     - 422: Validation error
     """
     try:
         receipt_repo = ReceiptRepository(db)
-
-        # TODO: Get user_id from JWT token
-        user_id = MOCK_USER_ID
 
         # Check if receipt exists and user has access
         existing = await receipt_repo.find_by_id_and_user(
@@ -347,7 +339,8 @@ async def update_receipt(
 @router.delete("/{receipt_id}", response_model=SuccessResponse)
 async def delete_receipt(
     receipt_id: UUID,
-    db: Client = Depends(get_db)
+    db: Client = Depends(get_db),
+    user_id: str = Depends(get_current_user_id)
 ):
     """
     Delete a receipt.
@@ -359,6 +352,7 @@ async def delete_receipt(
     - Success message
 
     Raises:
+    - 401: Unauthorized (missing or invalid token)
     - 404: Receipt not found
     - 403: Access denied
 
@@ -368,9 +362,6 @@ async def delete_receipt(
     """
     try:
         receipt_repo = ReceiptRepository(db)
-
-        # TODO: Get user_id from JWT token
-        user_id = MOCK_USER_ID
 
         # Check if receipt exists and user has access
         existing = await receipt_repo.find_by_id_and_user(
@@ -413,7 +404,8 @@ async def upload_receipt_image(
     receipt_id: UUID,
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
-    db: Client = Depends(get_db)
+    db: Client = Depends(get_db),
+    user_id: str = Depends(get_current_user_id)
 ):
     """
     Upload image for a receipt.
@@ -428,6 +420,7 @@ async def upload_receipt_image(
     - Updated receipt with image URLs and status changed to "processing"
 
     Raises:
+    - 401: Unauthorized (missing or invalid token)
     - 404: Receipt not found
     - 403: Access denied
     - 400: Invalid file type or size
@@ -441,9 +434,6 @@ async def upload_receipt_image(
     """
     try:
         receipt_repo = ReceiptRepository(db)
-
-        # TODO: Get user_id from JWT token
-        user_id = MOCK_USER_ID
 
         # Check if receipt exists and user has access
         existing = await receipt_repo.find_by_id_and_user(
