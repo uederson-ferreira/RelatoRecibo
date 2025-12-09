@@ -9,7 +9,7 @@ Created: 2025-12-09
 
 from typing import List
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File
 from supabase import Client
 from loguru import logger
 
@@ -23,6 +23,9 @@ from app.repositories.receipt_repository import ReceiptRepository
 from app.repositories.report_repository import ReportRepository
 from app.core.exceptions.receipt import ReceiptNotFoundException
 from app.core.exceptions.report import ReportNotFoundException
+from app.services.storage.uploader import StorageUploader
+from app.utils.validators.file import validate_image_file, validate_file_size
+from app.utils.image.validator import validate_image_content, validate_image_dimensions
 
 
 router = APIRouter()
@@ -348,4 +351,105 @@ async def delete_receipt(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to delete receipt"
+        )
+
+
+@router.post("/{receipt_id}/upload", response_model=ReceiptResponse)
+async def upload_receipt_image(
+    receipt_id: UUID,
+    file: UploadFile = File(...),
+    db: Client = Depends(get_db)
+):
+    """
+    Upload image for a receipt.
+
+    Path Parameters:
+    - **receipt_id**: Receipt UUID
+
+    Form Data:
+    - **file**: Image file (JPG, PNG, WEBP, max 5MB)
+
+    Returns:
+    - Updated receipt with image URLs and status changed to "processing"
+
+    Raises:
+    - 404: Receipt not found
+    - 403: Access denied
+    - 400: Invalid file type or size
+    - 422: Invalid image (corrupted, wrong dimensions)
+
+    Note:
+    - Image will be uploaded to Supabase Storage
+    - Thumbnail will be generated automatically
+    - OCR processing will start asynchronously
+    - Receipt status will change to "processing"
+    """
+    try:
+        receipt_repo = ReceiptRepository(db)
+
+        # TODO: Get user_id from JWT token
+        user_id = MOCK_USER_ID
+
+        # Check if receipt exists and user has access
+        existing = await receipt_repo.find_by_id_and_user(
+            receipt_id=receipt_id,
+            user_id=UUID(user_id)
+        )
+
+        if not existing:
+            raise ReceiptNotFoundException(
+                details={"receipt_id": str(receipt_id)}
+            )
+
+        # Validate file metadata
+        validate_image_file(file)
+
+        # Read file content
+        image_data = await file.read()
+
+        # Validate file size
+        validate_file_size(image_data)
+
+        # Validate image content
+        image = validate_image_content(image_data)
+        validate_image_dimensions(image)
+
+        # Upload to storage
+        storage = StorageUploader(db)
+        original_url, thumbnail_url = await storage.upload_image(
+            image_data=image_data,
+            user_id=UUID(user_id),
+            receipt_id=receipt_id,
+            content_type=file.content_type
+        )
+
+        # Update receipt with image URLs and change status to processing
+        update_data = {
+            "image_url": original_url,
+            "thumbnail_url": thumbnail_url,
+            "status": ReceiptStatus.PROCESSING.value
+        }
+
+        updated = await receipt_repo.update(receipt_id, update_data)
+
+        if not updated:
+            raise ReceiptNotFoundException(
+                details={"receipt_id": str(receipt_id)}
+            )
+
+        logger.info(f"Image uploaded for receipt: {receipt_id}")
+
+        # TODO: Trigger OCR processing asynchronously
+        # This would typically be done via a background task or message queue
+        # For now, the receipt will stay in "processing" status until OCR is implemented
+
+        return ReceiptResponse(**updated)
+
+    except ReceiptNotFoundException:
+        raise
+    except Exception as e:
+        logger.error(f"Error uploading image for receipt {receipt_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to upload image: {str(e)}"
         )
