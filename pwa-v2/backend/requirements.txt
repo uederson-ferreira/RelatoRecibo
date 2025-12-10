@@ -8,9 +8,10 @@ pydantic==2.5.0            # Data validation
 pydantic-settings==2.1.0   # Settings management
 
 # ===== Database & Supabase =====
-supabase==2.3.0            # Supabase Python client
-postgrest==0.13.0          # PostgreSQL REST client
-httpx==0.25.2              # Async HTTP client (required by supabase)
+supabase==2.8.1            # Supabase Python client (compatible version)
+postgrest>=0.17.0          # PostgreSQL REST client
+httpx>=0.24.0,<0.28.0      # Async HTTP client (required by supabase)
+websockets>=12.0            # WebSocket support for realtime
 
 # ===== Authentication & Security =====
 python-jose[cryptography]==3.3.0  # JWT tokens
@@ -20,6 +21,8 @@ python-multipart==0.0.6           # Form data & file uploads
 # ===== Image Processing & OCR =====
 Pillow==10.1.0             # Image processing
 pytesseract==0.3.10        # Tesseract OCR wrapper
+numpy>=1.24.0               # Numerical computing (required by OCR)
+opencv-python-headless>=4.8.0  # Computer vision (required by OCR preprocessing)
 
 # ===== PDF Generation =====
 reportlab==4.0.7           # PDF generation

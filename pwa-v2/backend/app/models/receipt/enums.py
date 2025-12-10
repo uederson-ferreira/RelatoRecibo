@@ -1,4 +1,5 @@
 """
+from __future__ import annotations
 Receipt Enums Module
 
 Defines enumerations for receipt-related fields.

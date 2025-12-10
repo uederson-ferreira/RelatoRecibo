@@ -67,10 +67,15 @@ class ReportRepository(BaseRepository):
 
             response = query.execute()
 
+            if not response or not hasattr(response, "data"):
+                logger.warning(f"No data in response for user {user_id}")
+                return []
+
+            reports = response.data if response.data else []
             logger.info(
-                f"Found {len(response.data)} reports for user {user_id}"
+                f"Found {len(reports)} reports for user {user_id}"
             )
-            return response.data
+            return reports
 
         except Exception as e:
             logger.error(f"Error finding reports for user {user_id}: {e}")

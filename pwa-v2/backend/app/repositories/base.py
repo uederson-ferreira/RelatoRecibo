@@ -82,12 +82,12 @@ class BaseRepository(ABC):
                 .execute()
             )
 
-            if response.data:
+            if response and response.data:
                 logger.debug(f"Record found in {self.TABLE_NAME}: {id}")
+                return response.data
             else:
                 logger.debug(f"Record not found in {self.TABLE_NAME}: {id}")
-
-            return response.data
+                return None
 
         except Exception as e:
             logger.error(f"Error finding record in {self.TABLE_NAME}: {e}")
@@ -156,6 +156,10 @@ class BaseRepository(ABC):
                 .insert(data)
                 .execute()
             )
+
+            if not response or not response.data or len(response.data) == 0:
+                logger.error(f"No data returned from insert in {self.TABLE_NAME}")
+                raise ValueError(f"Failed to create record in {self.TABLE_NAME}: no data returned")
 
             created_record = response.data[0]
             logger.info(
@@ -270,7 +274,15 @@ class BaseRepository(ABC):
                     query = query.eq(column, value)
 
             response = query.execute()
-            count = response.count if hasattr(response, "count") else 0
+            
+            # Try to get count from response
+            if hasattr(response, "count") and response.count is not None:
+                count = response.count
+            elif hasattr(response, "data"):
+                # Fallback: count the data array length
+                count = len(response.data) if response.data else 0
+            else:
+                count = 0
 
             logger.debug(f"Count in {self.TABLE_NAME}: {count}")
             return count

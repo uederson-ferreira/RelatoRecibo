@@ -1,4 +1,5 @@
 """
+from __future__ import annotations
 Receipt Response Models Module
 
 Defines schemas for receipt API responses.
@@ -44,11 +45,11 @@ class ReceiptResponse(BaseResponse, ReceiptBase, TimestampMixin):
 
     report_id: str = Field(
         ...,
-        description="UUID do relatÛrio"
+        description="UUID do relat√≥rio"
     )
     user_id: str = Field(
         ...,
-        description="UUID do usu·rio"
+        description="UUID do usu√°rio"
     )
     status: ReceiptStatus = Field(
         default=ReceiptStatus.PENDING,
@@ -64,14 +65,13 @@ class ReceiptResponse(BaseResponse, ReceiptBase, TimestampMixin):
     )
     ocr_text: Optional[str] = Field(
         None,
-        description="Texto extraÌdo por OCR"
+        description="Texto extra√≠do por OCR"
     )
     ocr_confidence: Optional[Decimal] = Field(
         None,
         ge=0,
         le=1,
-        decimal_places=2,
-        description="ConfianÁa do OCR (0-1)"
+        description="Confian√ßa do OCR (0-1)"
     )
     ocr_error: Optional[str] = Field(
         None,
@@ -122,8 +122,7 @@ class ReceiptSummary(BaseResponse):
 
     value: Decimal = Field(
         ...,
-        description="Valor",
-        decimal_places=2
+        description="Valor"
     )
     date: str = Field(
         ...,
@@ -131,7 +130,7 @@ class ReceiptSummary(BaseResponse):
     )
     description: Optional[str] = Field(
         None,
-        description="DescriÁ„o"
+        description="Descri√ß√£o"
     )
     thumbnail_url: Optional[str] = Field(
         None,

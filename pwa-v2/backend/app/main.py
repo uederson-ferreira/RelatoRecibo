@@ -53,16 +53,17 @@ app = FastAPI(
     description="""
     # RelatoRecibo API v2.0
 
-    API moderna para gest�o de recibos e presta��o de contas.
+    API moderna para gest?o de recibos e presta??o de contas.
 
     ## Recursos principais:
-    - =� Upload de fotos de recibos
-    - = OCR autom�tico para detectar valores
-    - =� Gera��o de PDF profissional
-    - = Autentica��o JWT
-    - =� Armazenamento seguro (Supabase)
+    - =? Upload de fotos de recibos
+    - =
+ OCR autom?tico para detectar valores
+    - =? Gera??o de PDF profissional
+    - = Autentica??o JWT
+    - =? Armazenamento seguro (Supabase)
 
-    ## Stack tecnol�gica:
+    ## Stack tecnol?gica:
     - **Backend:** Python 3.11+ + FastAPI
     - **Database:** PostgreSQL (Supabase)
     - **Storage:** Supabase Storage
@@ -93,14 +94,14 @@ logger.info(
 # ----------------------------------------
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.ALLOWED_ORIGINS,
+    allow_origins=settings.allowed_origins_list,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allow_headers=["*"],
     expose_headers=["Content-Range", "X-Total-Count"]
 )
 
-logger.info(f"CORS configured for origins: {settings.ALLOWED_ORIGINS}")
+logger.info(f"CORS configured for origins: {settings.allowed_origins_list}")
 
 
 # ----------------------------------------
@@ -132,7 +133,7 @@ async def app_exception_handler(request, exc: AppException):
 @app.exception_handler(Exception)
 async def global_exception_handler(request, exc: Exception):
     """Handle unexpected exceptions."""
-    logger.exception(f"Unhandled exception: {exc}")
+    logger.exception("Unhandled exception occurred")
     return JSONResponse(
         status_code=500,
         content={
@@ -158,7 +159,7 @@ async def startup_event():
     - Validate configuration
     """
     logger.info("=" * 50)
-    logger.info(f"=� Starting {settings.PROJECT_NAME} v{settings.VERSION}")
+    logger.info(f"=? Starting {settings.PROJECT_NAME} v{settings.VERSION}")
     logger.info(f"Environment: {settings.ENVIRONMENT}")
     logger.info(f"Debug mode: {settings.DEBUG}")
     logger.info(f"Docs URL: {settings.docs_url or 'Disabled'}")
@@ -189,7 +190,7 @@ async def shutdown_event():
     - Cleanup resources
     """
     logger.info("=" * 50)
-    logger.info(f"=� Shutting down {settings.PROJECT_NAME}")
+    logger.info(f"=? Shutting down {settings.PROJECT_NAME}")
     logger.info("=" * 50)
 
     # Close Supabase client

@@ -1,4 +1,5 @@
 """
+from __future__ import annotations
 Base Pydantic Models Module
 
 Defines base schemas used across all entities.

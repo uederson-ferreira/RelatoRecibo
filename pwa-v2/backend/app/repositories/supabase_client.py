@@ -86,5 +86,5 @@ def get_supabase_client() -> Client:
 # ----------------------------------------
 # Convenience client instance
 # ----------------------------------------
-# You can import this directly for quick access
-supabase_client = get_supabase_client()
+# Note: Client is created lazily via get_supabase_client()
+# Do not initialize here to avoid import-time errors

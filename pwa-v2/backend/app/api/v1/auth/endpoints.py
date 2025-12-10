@@ -7,6 +7,9 @@ Author: RelatoRecibo Team
 Created: 2025-12-09
 """
 
+import asyncio
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from supabase import Client
 from loguru import logger
@@ -72,26 +75,54 @@ async def signup(
                 detail="Failed to create user"
             )
 
-        user_id = auth_response.user.id
+        user_id_str = auth_response.user.id
+        user_id = UUID(user_id_str)  # Convert to UUID for repository methods
 
-        # Create profile in profiles table
-        profile_data = {
-            "id": user_id,
-            "email": user_data.email,
-            "full_name": user_data.full_name,
-            "email_verified": False
-        }
+        # Note: The trigger handle_new_user() should auto-create the profile
+        # Wait a moment for the trigger to execute, then verify profile exists
+        await asyncio.sleep(0.5)  # Small delay for trigger execution
 
-        await user_repo.create(profile_data)
+        # Verify profile was created by trigger, or create it if it doesn't exist
+        user_profile = await user_repo.find_by_id(user_id)
+        if not user_profile:
+            # Profile not created by trigger, create it manually
+            logger.warning(f"Profile not auto-created for user {user_id}, creating manually")
+            profile_data = {
+                "id": str(user_id),  # Supabase expects string UUID
+                "email": user_data.email,
+                "full_name": user_data.full_name
+            }
+            try:
+                await user_repo.create(profile_data)
+            except Exception as profile_error:
+                logger.error(f"Error creating profile for user {user_id}: {profile_error}")
+                # Try to clean up auth user if profile creation fails
+                try:
+                    db.auth.admin.delete_user(user_id_str)  # Use string UUID for Supabase admin API
+                except Exception as cleanup_error:
+                    logger.warning(f"Failed to cleanup auth user {user_id_str}: {cleanup_error}")
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=f"Failed to create user profile: {str(profile_error)}"
+                )
+        else:
+            # Profile exists, update full_name if it wasn't set by trigger
+            if not user_profile.get('full_name') and user_data.full_name:
+                await user_repo.update_profile(user_id, {"full_name": user_data.full_name})
+                user_profile = await user_repo.find_by_id(user_id)
+
+        # Ensure profile exists
+        if not user_profile:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="User profile not found after creation"
+            )
 
         # Create access token
         access_token = create_access_token(
-            user_id=user_id,
+            user_id=user_id,  # Use UUID object
             email=user_data.email
         )
-
-        # Fetch user profile
-        user_profile = await user_repo.find_by_id(user_id)
 
         logger.info(f"User created successfully: {user_data.email}")
 
@@ -104,11 +135,14 @@ async def signup(
 
     except UserAlreadyExistsException:
         raise
+    except HTTPException:
+        # Re-raise HTTP exceptions (already formatted)
+        raise
     except Exception as e:
-        logger.error(f"Error during signup: {e}")
+        logger.error(f"Error during signup: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="An error occurred during signup"
+            detail=f"An error occurred during signup: {str(e)}"
         )
 
 

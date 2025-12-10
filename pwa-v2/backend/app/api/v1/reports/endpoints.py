@@ -10,6 +10,7 @@ Created: 2025-12-09
 from typing import List
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi.responses import Response
 from supabase import Client
 from loguru import logger
 
@@ -20,6 +21,7 @@ from app.models.report.response import ReportResponse, ReportSummary
 from app.models.report.enums import ReportStatus
 from app.models.base import PaginatedResponse, SuccessResponse
 from app.repositories.report_repository import ReportRepository
+from app.services.pdf.generator import PDFGenerator
 from app.core.exceptions.report import (
     ReportNotFoundException,
     ReportAccessDeniedException
@@ -27,6 +29,18 @@ from app.core.exceptions.report import (
 
 
 router = APIRouter()
+
+
+def map_report_fields(report_data: dict) -> dict:
+    """
+    Map database field names to model field names.
+    
+    Converts receipts_count (DB) to receipt_count (model).
+    """
+    mapped = dict(report_data)
+    if 'receipts_count' in mapped and 'receipt_count' not in mapped:
+        mapped['receipt_count'] = mapped.pop('receipts_count', 0)
+    return mapped
 
 
 @router.post("", response_model=ReportResponse, status_code=status.HTTP_201_CREATED)
@@ -54,23 +68,49 @@ async def create_report(
     try:
         repo = ReportRepository(db)
 
-        # Prepare report data
-        report_dict = report_data.model_dump()
-        report_dict["user_id"] = user_id
+        # Prepare report data - only include fields that exist in database
+        report_dict = report_data.model_dump(exclude_unset=True)
+        
+        # Remove fields that don't exist in database schema
+        # (start_date, end_date, notes are not in the schema)
+        report_dict.pop("start_date", None)
+        report_dict.pop("end_date", None)
+        report_dict.pop("notes", None)
+        
+        # target_value is already handled by Pydantic model validation
+        # Just ensure it's converted to string for Supabase if present
+        if "target_value" in report_dict and report_dict["target_value"] is not None:
+            # Convert Decimal to string for Supabase
+            from decimal import Decimal
+            if isinstance(report_dict["target_value"], Decimal):
+                report_dict["target_value"] = str(report_dict["target_value"])
+            elif isinstance(report_dict["target_value"], (int, float)):
+                report_dict["target_value"] = str(report_dict["target_value"])
+        
+        # Add required fields
+        report_dict["user_id"] = str(user_id)  # Convert to string for Supabase
         report_dict["status"] = ReportStatus.DRAFT.value
 
         # Create report
         created = await repo.create(report_dict)
 
-        logger.info(f"Report created: {created['id']}")
+        if not created:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to create report - no data returned"
+            )
 
-        return ReportResponse(**created)
+        logger.info(f"Report created: {created.get('id')}")
 
+        return ReportResponse(**map_report_fields(created))
+
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Error creating report: {e}")
+        logger.error(f"Error creating report: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to create report"
+            detail=f"Failed to create report: {str(e)}"
         )
 
 
@@ -107,14 +147,22 @@ async def list_reports(
             offset=pagination.offset
         )
 
+        # Ensure reports is a list
+        if not reports:
+            reports = []
+
         # Count total
-        total = await repo.count_by_user(
-            user_id=UUID(user_id),
-            status=status.value if status else None
-        )
+        try:
+            total = await repo.count_by_user(
+                user_id=UUID(user_id),
+                status=status.value if status else None
+            )
+        except Exception as count_error:
+            logger.warning(f"Error counting reports, using list length: {count_error}")
+            total = len(reports)
 
         # Convert to summary format
-        items = [ReportSummary(**report) for report in reports]
+        items = [ReportSummary(**map_report_fields(report)) for report in reports]
 
         logger.info(f"Listed {len(items)} reports for user {user_id}")
 
@@ -125,11 +173,14 @@ async def list_reports(
             offset=pagination.offset
         )
 
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Error listing reports: {e}")
+        error_msg = str(e)
+        logger.error("Error listing reports", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to list reports"
+            detail=f"Failed to list reports: {error_msg}"
         )
 
 
@@ -169,7 +220,7 @@ async def get_report(
 
         logger.info(f"Report retrieved: {report_id}")
 
-        return ReportResponse(**report)
+        return ReportResponse(**map_report_fields(report))
 
     except ReportNotFoundException:
         raise
@@ -230,7 +281,7 @@ async def update_report(
 
         if not update_dict:
             # No fields to update
-            return ReportResponse(**existing)
+            return ReportResponse(**map_report_fields(existing))
 
         updated = await repo.update(report_id, update_dict)
 
@@ -241,7 +292,7 @@ async def update_report(
 
         logger.info(f"Report updated: {report_id}")
 
-        return ReportResponse(**updated)
+        return ReportResponse(**map_report_fields(updated))
 
     except ReportNotFoundException:
         raise
@@ -312,4 +363,81 @@ async def delete_report(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to delete report"
+        )
+
+
+@router.get("/{report_id}/pdf", response_class=Response)
+async def generate_report_pdf(
+    report_id: UUID,
+    download: bool = Query(False, description="Force download instead of inline display"),
+    db: Client = Depends(get_db),
+    user_id: str = Depends(get_current_user_id)
+):
+    """
+    Generate and download PDF for a report.
+
+    Path Parameters:
+    - **report_id**: Report UUID
+
+    Query Parameters:
+    - **download**: If true, forces download (default: false, displays inline)
+
+    Returns:
+    - PDF file (application/pdf)
+
+    Raises:
+    - 401: Unauthorized (missing or invalid token)
+    - 404: Report not found
+    - 403: Access denied (not owner)
+    - 500: PDF generation failed
+    """
+    try:
+        generator = PDFGenerator(db)
+
+        # Generate PDF bytes
+        pdf_bytes = await generator.generate_pdf_bytes_only(
+            report_id=report_id,
+            user_id=UUID(user_id)
+        )
+
+        # Get report name for filename
+        repo = ReportRepository(db)
+        report = await repo.find_by_id_and_user(
+            report_id=report_id,
+            user_id=UUID(user_id)
+        )
+
+        if not report:
+            raise ReportNotFoundException(
+                details={"report_id": str(report_id)}
+            )
+
+        # Format filename
+        report_name = report.get("name", "relatorio")
+        import re
+        filename = re.sub(r'[^a-zA-Z0-9\s]', '', report_name)
+        filename = re.sub(r'\s+', '_', filename).lower()
+        filename = f"{filename}.pdf"
+
+        # Determine content disposition
+        disposition = "attachment" if download else "inline"
+
+        logger.info(f"PDF generated for report {report_id}")
+
+        return Response(
+            content=pdf_bytes,
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f'{disposition}; filename="{filename}"',
+                "Content-Length": str(len(pdf_bytes))
+            }
+        )
+
+    except (ReportNotFoundException, ReportAccessDeniedException):
+        raise
+    except Exception as e:
+        logger.error(f"Error generating PDF for report {report_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to generate PDF"
         )

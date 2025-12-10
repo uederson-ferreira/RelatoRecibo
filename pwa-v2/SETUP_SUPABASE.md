@@ -17,6 +17,7 @@ Guia completo para configurar o banco de dados Supabase.
 ### 1. Acessar o Supabase Dashboard
 
 Abra o link:
+
 ```
 https://supabase.com/dashboard/project/euecdkkmnrzqbetzgujw
 ```
@@ -33,6 +34,7 @@ Execute os scripts **na ordem** usando o **SQL Editor**:
 4. Cole no editor e clique em **Run**
 
 **O que este script faz:**
+
 - Cria as tabelas: `users`, `reports`, `receipts`
 - Define as colunas e tipos de dados
 - Configura chaves primárias e estrangeiras
@@ -45,6 +47,7 @@ Execute os scripts **na ordem** usando o **SQL Editor**:
 3. Cole e execute
 
 **O que este script faz:**
+
 - Habilita Row Level Security (RLS)
 - Cria políticas de acesso por usuário
 - Garante que cada usuário vê apenas seus dados
@@ -57,6 +60,7 @@ Execute os scripts **na ordem** usando o **SQL Editor**:
 3. Cole e execute
 
 **O que este script faz:**
+
 - Cria o bucket `receipts` para armazenar imagens
 - Define políticas de upload/download
 - Limita tamanho de arquivos (5MB)
@@ -69,6 +73,7 @@ Execute os scripts **na ordem** usando o **SQL Editor**:
 3. Cole e execute
 
 **O que este script faz:**
+
 - Cria função para recalcular totais de relatórios
 - Cria triggers automáticos
 - Função de atualização de timestamps
@@ -140,6 +145,7 @@ curl http://localhost:8000/
 ```
 
 Resposta esperada:
+
 ```json
 {
   "status": "ok",
@@ -203,6 +209,7 @@ Isso retornará um `access_token` que você usa para autenticar as próximas req
 ### Backend não conecta ao Supabase
 
 **Verificar:**
+
 1. Arquivo `.env` existe em `pwa-v2/backend/`
 2. Credenciais estão corretas no `.env`
 3. URL do Supabase está acessível

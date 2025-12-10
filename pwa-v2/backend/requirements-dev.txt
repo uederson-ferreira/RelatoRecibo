@@ -1,13 +1,13 @@
 # RelatoRecibo Backend - Development Dependencies
 
 # Include production dependencies
--r backend-requirements.txt
+-r requirements.txt
 
 # ===== Testing =====
 pytest==7.4.3              # Testing framework
 pytest-asyncio==0.21.1     # Async test support
 pytest-cov==4.1.0          # Coverage reporting
-httpx==0.25.2              # HTTP client for testing (already in prod)
+# httpx já está em requirements.txt (versão compatível)
 
 # ===== Code Quality =====
 black==23.12.0             # Code formatter

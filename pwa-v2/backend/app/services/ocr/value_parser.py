@@ -31,14 +31,14 @@ class ValueParser:
         "valor total",
         "total geral",
         "total a pagar",
-        "total lÌquido",
+        "total l√≠quido",
         "valor",
         "vlr",
         "vl total",
         "soma",
-        "import‚ncia",
+        "import√¢ncia",
         "liquido",
-        "lÌquido"
+        "l√≠quido"
     ]
 
     # Patterns to match monetary values

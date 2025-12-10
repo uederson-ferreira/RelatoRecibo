@@ -185,7 +185,7 @@ class DuplicateReportNameException(ConflictException):
 
     Example:
         raise DuplicateReportNameException(
-            details={"name": "Viagem São Paulo 2025"}
+            details={"name": "Viagem SÃ£o Paulo 2025"}
         )
     """
 

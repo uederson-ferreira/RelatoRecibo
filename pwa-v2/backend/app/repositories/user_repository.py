@@ -51,12 +51,12 @@ class UserRepository(BaseRepository):
                 .execute()
             )
 
-            if response.data:
+            if response and response.data:
                 logger.debug(f"User found with email: {email}")
+                return response.data
             else:
                 logger.debug(f"User not found with email: {email}")
-
-            return response.data
+                return None
 
         except Exception as e:
             logger.error(f"Error finding user by email {email}: {e}")

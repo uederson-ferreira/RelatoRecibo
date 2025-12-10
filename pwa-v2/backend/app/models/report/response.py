@@ -1,4 +1,5 @@
 """
+from __future__ import annotations
 Report Response Models Module
 
 Defines schemas for report API responses.
@@ -26,8 +27,8 @@ class ReportResponse(BaseResponse, ReportBase, TimestampMixin):
         {
             "id": "123e4567-e89b-12d3-a456-426614174000",
             "user_id": "987fcdeb-51a2-43f7-8e6b-123456789abc",
-            "name": "Viagem S鉶 Paulo - Janeiro 2025",
-            "description": "Despesas da viagem de neg骳ios",
+            "name": "Viagem S茫o Paulo - Janeiro 2025",
+            "description": "Despesas da viagem de neg贸cios",
             "start_date": "2025-01-15",
             "end_date": "2025-01-20",
             "notes": "Incluir recibos de hotel e transporte",
@@ -41,20 +42,23 @@ class ReportResponse(BaseResponse, ReportBase, TimestampMixin):
 
     user_id: str = Field(
         ...,
-        description="UUID do usu醨io dono do relat髍io"
+        description="UUID do usu谩rio dono do relat贸rio"
     )
     status: ReportStatus = Field(
         default=ReportStatus.DRAFT,
-        description="Status do relat髍io"
+        description="Status do relat贸rio"
+    )
+    target_value: Optional[Decimal] = Field(
+        None,
+        description="Valor de meta do relat贸rio"
     )
     total_value: Decimal = Field(
         default=Decimal("0.00"),
-        description="Valor total dos recibos (calculado automaticamente)",
-        decimal_places=2
+        description="Valor total dos recibos (calculado automaticamente)"
     )
     receipt_count: int = Field(
         default=0,
-        description="N鷐ero de recibos no relat髍io",
+        description="N煤mero de recibos no relat贸rio",
         ge=0
     )
 
@@ -64,8 +68,8 @@ class ReportResponse(BaseResponse, ReportBase, TimestampMixin):
             "example": {
                 "id": "123e4567-e89b-12d3-a456-426614174000",
                 "user_id": "987fcdeb-51a2-43f7-8e6b-123456789abc",
-                "name": "Viagem S鉶 Paulo - Janeiro 2025",
-                "description": "Despesas da viagem de neg骳ios",
+                "name": "Viagem S茫o Paulo - Janeiro 2025",
+                "description": "Despesas da viagem de neg贸cios",
                 "start_date": "2025-01-15",
                 "end_date": "2025-01-20",
                 "notes": "Incluir recibos de hotel e transporte",
@@ -88,7 +92,7 @@ class ReportSummary(BaseResponse):
     Example:
         {
             "id": "123e4567-e89b-12d3-a456-426614174000",
-            "name": "Viagem S鉶 Paulo - Janeiro 2025",
+            "name": "Viagem S茫o Paulo - Janeiro 2025",
             "status": "draft",
             "total_value": 1250.50,
             "receipt_count": 8,
@@ -98,25 +102,24 @@ class ReportSummary(BaseResponse):
 
     name: str = Field(
         ...,
-        description="Nome do relat髍io"
+        description="Nome do relat贸rio"
     )
     status: ReportStatus = Field(
         ...,
-        description="Status do relat髍io"
+        description="Status do relat贸rio"
     )
     total_value: Decimal = Field(
         ...,
-        description="Valor total",
-        decimal_places=2
+        description="Valor total"
     )
     receipt_count: int = Field(
         ...,
-        description="N鷐ero de recibos",
+        description="N煤mero de recibos",
         ge=0
     )
     created_at: str = Field(
         ...,
-        description="Data de cria玢o"
+        description="Data de cria莽茫o"
     )
 
     model_config = ConfigDict(
@@ -124,7 +127,7 @@ class ReportSummary(BaseResponse):
         json_schema_extra={
             "example": {
                 "id": "123e4567-e89b-12d3-a456-426614174000",
-                "name": "Viagem S鉶 Paulo - Janeiro 2025",
+                "name": "Viagem S茫o Paulo - Janeiro 2025",
                 "status": "draft",
                 "total_value": "1250.50",
                 "receipt_count": 8,

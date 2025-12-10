@@ -1,4 +1,5 @@
 """
+from __future__ import annotations
 Report Enums Module
 
 Defines enumerations for report-related fields.

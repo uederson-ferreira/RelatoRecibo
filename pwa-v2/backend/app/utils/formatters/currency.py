@@ -70,9 +70,9 @@ def format_brl_short(value: Union[Decimal, float, int]) -> str:
 
     abs_value = abs(value)
 
-    if abs_value >= 1_000_000_000:  # Bilhões
+    if abs_value >= 1_000_000_000:  # BilhÃµes
         return f"R$ {value / 1_000_000_000:,.1f} B".replace(".", ",")
-    elif abs_value >= 1_000_000:  # Milhões
+    elif abs_value >= 1_000_000:  # MilhÃµes
         return f"R$ {value / 1_000_000:,.1f} M".replace(".", ",")
     elif abs_value >= 1_000:  # Milhares
         return f"R$ {value / 1_000:,.1f} mil".replace(".", ",")

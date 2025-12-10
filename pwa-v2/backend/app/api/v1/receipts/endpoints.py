@@ -32,6 +32,35 @@ from app.utils.image.validator import validate_image_content, validate_image_dim
 router = APIRouter()
 
 
+def map_receipt_fields(receipt_data: dict) -> dict:
+    """
+    Map database field names and types to model field names/types.
+    
+    Converts Decimal values to strings for Supabase compatibility.
+    """
+    from decimal import Decimal
+    
+    mapped = dict(receipt_data)
+    
+    # Convert Decimal to string for Supabase
+    if "value" in mapped:
+        if isinstance(mapped["value"], Decimal):
+            mapped["value"] = str(mapped["value"])
+        elif isinstance(mapped["value"], (int, float)):
+            mapped["value"] = str(mapped["value"])
+    
+    # Convert date to string if needed
+    if "date" in mapped and hasattr(mapped["date"], "isoformat"):
+        mapped["date"] = mapped["date"].isoformat()
+    
+    # Ensure UUIDs are strings
+    for field in ["id", "report_id", "user_id"]:
+        if field in mapped and mapped[field] is not None:
+            mapped[field] = str(mapped[field])
+    
+    return mapped
+
+
 async def process_ocr_background(
     receipt_id: UUID,
     image_data: bytes,
@@ -126,23 +155,42 @@ async def create_receipt(
 
         # Prepare receipt data
         receipt_dict = receipt_data.model_dump()
-        receipt_dict["user_id"] = user_id
+        receipt_dict["user_id"] = str(user_id)  # Convert to string for Supabase
         receipt_dict["status"] = ReceiptStatus.PENDING.value
+        
+        # Convert Decimal to string for Supabase (it expects string for DECIMAL columns)
+        from decimal import Decimal
+        if "value" in receipt_dict:
+            if isinstance(receipt_dict["value"], Decimal):
+                receipt_dict["value"] = str(receipt_dict["value"])
+            elif isinstance(receipt_dict["value"], (int, float)):
+                receipt_dict["value"] = str(receipt_dict["value"])
+        
+        # Ensure report_id is string
+        if "report_id" in receipt_dict:
+            receipt_dict["report_id"] = str(receipt_dict["report_id"])
+        
+        # Convert date to string if needed
+        if "date" in receipt_dict and hasattr(receipt_dict["date"], "isoformat"):
+            receipt_dict["date"] = receipt_dict["date"].isoformat()
 
         # Create receipt
         created = await receipt_repo.create(receipt_dict)
 
-        logger.info(f"Receipt created: {created['id']}")
+        logger.info(f"Receipt created: {created.get('id')}")
 
-        return ReceiptResponse(**created)
+        return ReceiptResponse(**map_receipt_fields(created))
 
     except ReportNotFoundException:
         raise
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Error creating receipt: {e}")
+        error_msg = str(e)
+        logger.error("Error creating receipt", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to create receipt"
+            detail=f"Failed to create receipt: {error_msg}"
         )
 
 
@@ -253,7 +301,7 @@ async def get_receipt(
 
         logger.info(f"Receipt retrieved: {receipt_id}")
 
-        return ReceiptResponse(**receipt)
+        return ReceiptResponse(**map_receipt_fields(receipt))
 
     except ReceiptNotFoundException:
         raise
@@ -310,10 +358,22 @@ async def update_receipt(
 
         # Update receipt
         update_dict = update_data.model_dump(exclude_unset=True)
+        
+        # Convert Decimal to string for Supabase
+        from decimal import Decimal
+        if "value" in update_dict:
+            if isinstance(update_dict["value"], Decimal):
+                update_dict["value"] = str(update_dict["value"])
+            elif isinstance(update_dict["value"], (int, float)):
+                update_dict["value"] = str(update_dict["value"])
+        
+        # Convert date to string if needed
+        if "date" in update_dict and hasattr(update_dict["date"], "isoformat"):
+            update_dict["date"] = update_dict["date"].isoformat()
 
         if not update_dict:
             # No fields to update
-            return ReceiptResponse(**existing)
+            return ReceiptResponse(**map_receipt_fields(existing))
 
         updated = await receipt_repo.update(receipt_id, update_dict)
 
@@ -324,7 +384,7 @@ async def update_receipt(
 
         logger.info(f"Receipt updated: {receipt_id}")
 
-        return ReceiptResponse(**updated)
+        return ReceiptResponse(**map_receipt_fields(updated))
 
     except ReceiptNotFoundException:
         raise
@@ -492,7 +552,7 @@ async def upload_receipt_image(
             db=db
         )
 
-        return ReceiptResponse(**updated)
+        return ReceiptResponse(**map_receipt_fields(updated))
 
     except ReceiptNotFoundException:
         raise

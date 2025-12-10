@@ -14,7 +14,7 @@ from fastapi import APIRouter
 from app.api.v1.auth import endpoints as auth_endpoints
 from app.api.v1.reports import endpoints as reports_endpoints
 from app.api.v1.receipts import endpoints as receipts_endpoints
-# from app.api.v1.profile import endpoints as profile_endpoints
+from app.api.v1.profile import endpoints as profile_endpoints
 
 
 # Main API v1 router
@@ -42,8 +42,8 @@ api_router.include_router(
 )
 
 # Include profile endpoints
-# api_router.include_router(
-#     profile_endpoints.router,
-#     prefix="/profile",
-#     tags=["Profile"]
-# )
+api_router.include_router(
+    profile_endpoints.router,
+    prefix="/profile",
+    tags=["Profile"]
+)

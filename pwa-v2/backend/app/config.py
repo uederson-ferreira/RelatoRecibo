@@ -37,7 +37,7 @@ class Settings(BaseSettings):
     )
     VERSION: str = Field(
         default="2.0.0",
-        description="Vers�o da API"
+        description="Versão da API"
     )
     ENVIRONMENT: str = Field(
         default="development",
@@ -71,22 +71,27 @@ class Settings(BaseSettings):
     # ----------------------------------------
     # CORS Settings
     # ----------------------------------------
-    ALLOWED_ORIGINS: List[str] = Field(
-        default=[
-            "http://localhost:5173",
-            "http://localhost:3000",
-            "http://localhost:8000"
-        ],
-        description="Lista de origins permitidas para CORS"
+    ALLOWED_ORIGINS: str = Field(
+        default="http://localhost:5173,http://localhost:3000,http://localhost:8000",
+        description="Lista de origins permitidas para CORS (separadas por vírgula)"
     )
 
     @field_validator("ALLOWED_ORIGINS", mode="before")
     @classmethod
     def parse_allowed_origins(cls, v):
         """Parse ALLOWED_ORIGINS from comma-separated string or list."""
+        if isinstance(v, list):
+            return ",".join(v)
         if isinstance(v, str):
-            return [origin.strip() for origin in v.split(",")]
-        return v
+            return v
+        return str(v)
+
+    @property
+    def allowed_origins_list(self) -> List[str]:
+        """Get ALLOWED_ORIGINS as a list."""
+        if isinstance(self.ALLOWED_ORIGINS, str):
+            return [origin.strip() for origin in self.ALLOWED_ORIGINS.split(",") if origin.strip()]
+        return self.ALLOWED_ORIGINS if isinstance(self.ALLOWED_ORIGINS, list) else []
 
     # ----------------------------------------
     # Supabase Configuration

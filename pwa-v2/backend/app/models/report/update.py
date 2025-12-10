@@ -7,8 +7,10 @@ Author: RelatoRecibo Team
 Created: 2025-12-09
 """
 
+from __future__ import annotations
+
 from typing import Optional
-from datetime import date
+from datetime import date as date_type
 from pydantic import BaseModel, Field, field_validator, ConfigDict
 
 from app.models.report.enums import ReportStatus
@@ -33,34 +35,34 @@ class ReportUpdate(BaseModel):
         None,
         min_length=3,
         max_length=200,
-        description="Nome do relatório"
+        description="Nome do relatÃ³rio"
     )
     description: Optional[str] = Field(
         None,
         max_length=1000,
-        description="Descrição do relatório"
+        description="DescriÃ§Ã£o do relatÃ³rio"
     )
-    start_date: Optional[date] = Field(
+    start_date: Optional[date_type] = Field(
         None,
-        description="Data de início"
+        description="Data de inÃ­cio"
     )
-    end_date: Optional[date] = Field(
+    end_date: Optional[date_type] = Field(
         None,
         description="Data final"
     )
     notes: Optional[str] = Field(
         None,
         max_length=2000,
-        description="Observações"
+        description="ObservaÃ§Ãµes"
     )
     status: Optional[ReportStatus] = Field(
         None,
-        description="Status do relatório"
+        description="Status do relatÃ³rio"
     )
 
     @field_validator("end_date")
     @classmethod
-    def validate_end_date(cls, v: Optional[date], info) -> Optional[date]:
+    def validate_end_date(cls, v: Optional[date_type], info) -> Optional[date_type]:
         """Validate that end_date is after start_date."""
         if v and info.data.get("start_date"):
             if v < info.data["start_date"]:

@@ -25,12 +25,12 @@ THUMBNAIL_SIZE = (300, 300)
 RECEIPT_CATEGORIES = [
     "Hospedagem",
     "Transporte",
-    "AlimentaÁ„o",
-    "CombustÌvel",
+    "Alimenta√ß√£o",
+    "Combust√≠vel",
     "Estacionamento",
-    "Ped·gio",
+    "Ped√°gio",
     "Material",
-    "ServiÁos",
+    "Servi√ßos",
     "Outros"
 ]
 

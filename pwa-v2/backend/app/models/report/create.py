@@ -1,4 +1,5 @@
 """
+from __future__ import annotations
 Report Create Models Module
 
 Defines schema for creating new reports.
@@ -21,8 +22,8 @@ class ReportCreate(ReportBase):
 
     Example:
         {
-            "name": "Viagem São Paulo - Janeiro 2025",
-            "description": "Despesas da viagem de negócios",
+            "name": "Viagem SÃ£o Paulo - Janeiro 2025",
+            "description": "Despesas da viagem de negÃ³cios",
             "start_date": "2025-01-15",
             "end_date": "2025-01-20",
             "notes": "Incluir recibos de hotel e transporte"
@@ -32,8 +33,8 @@ class ReportCreate(ReportBase):
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
-                "name": "Viagem São Paulo - Janeiro 2025",
-                "description": "Despesas da viagem de negócios",
+                "name": "Viagem SÃ£o Paulo - Janeiro 2025",
+                "description": "Despesas da viagem de negÃ³cios",
                 "start_date": "2025-01-15",
                 "end_date": "2025-01-20",
                 "notes": "Incluir recibos de hotel e transporte"

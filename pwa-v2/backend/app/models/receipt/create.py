@@ -1,4 +1,5 @@
 """
+from __future__ import annotations
 Receipt Create Models Module
 
 Defines schema for creating new receipts.
@@ -32,7 +33,7 @@ class ReceiptCreate(ReceiptBase):
 
     report_id: str = Field(
         ...,
-        description="UUID do relatório ao qual o recibo pertence"
+        description="UUID do relatÃ³rio ao qual o recibo pertence"
     )
 
     model_config = ConfigDict(

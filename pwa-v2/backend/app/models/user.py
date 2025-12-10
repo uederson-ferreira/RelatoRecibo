@@ -1,4 +1,5 @@
 """
+from __future__ import annotations
 User Pydantic Models Module
 
 Defines user-related schemas for authentication and profile.
@@ -191,10 +192,8 @@ class UserResponse(BaseResponse, TimestampMixin):
         None,
         description="URL to user avatar image"
     )
-    email_verified: bool = Field(
-        default=False,
-        description="Email verification status"
-    )
+    # Note: email_verified removed - not in database schema
+    # Can be added later if needed
 
     model_config = ConfigDict(
         from_attributes=True,
@@ -204,7 +203,6 @@ class UserResponse(BaseResponse, TimestampMixin):
                 "email": "user@example.com",
                 "full_name": "John Doe",
                 "avatar_url": None,
-                "email_verified": False,
                 "created_at": "2025-12-09T10:00:00Z",
                 "updated_at": "2025-12-09T10:00:00Z"
             }
@@ -256,7 +254,6 @@ class TokenResponse(BaseModel):
                     "email": "user@example.com",
                     "full_name": "John Doe",
                     "avatar_url": None,
-                    "email_verified": False,
                     "created_at": "2025-12-09T10:00:00Z",
                     "updated_at": "2025-12-09T10:00:00Z"
                 }
